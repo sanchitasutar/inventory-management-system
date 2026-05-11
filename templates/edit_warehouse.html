@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1 class="page-title">Edit Warehouse</h1>
+
+<div class="form-section">
+
+    <h4 class="mb-4">
+
+        Update Warehouse Details
+
+    </h4>
+
+    <form method="POST">
+
+        <div class="row g-3">
+
+            <!-- NAME -->
+
+            <div class="col-md-6">
+
+                <label class="form-label">
+
+                    Warehouse Name
+
+                </label>
+
+                <input type="text"
+                       name="name"
+                       class="form-control"
+                       value="{{warehouse[1]}}"
+                       required>
+
+            </div>
+
+            <!-- LOCATION -->
+
+            <div class="col-md-6">
+
+                <label class="form-label">
+
+                    Warehouse Location
+
+                </label>
+
+                <input type="text"
+                       name="location"
+                       class="form-control"
+                       value="{{warehouse[2]}}"
+                       required>
+
+            </div>
+
+        </div>
+
+        <div class="mt-4 d-flex gap-3">
+
+            <button class="btn btn-success">
+
+                Update Warehouse
+
+            </button>
+
+            <a href="/warehouses"
+               class="btn btn-secondary">
+
+                Cancel
+
+            </a>
+
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

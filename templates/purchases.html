@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1 class="page-title">Purchase Management</h1>
+
+<!-- ADD PURCHASE SECTION -->
+
+<div class="form-section">
+
+    <h4 class="mb-4">Add New Purchase</h4>
+
+    <form method="POST">
+
+        <div class="row g-3">
+
+            <!-- Supplier -->
+
+            <div class="col-md-3">
+
+                <select name="supplier"
+                        class="form-select"
+                        required>
+
+                    <option selected disabled>
+                        Select Supplier
+                    </option>
+
+                    {% for s in suppliers %}
+
+                    <option value="{{s[0]}}">
+                        {{s[1]}}
+                    </option>
+
+                    {% endfor %}
+
+                </select>
+
+            </div>
+
+            <!-- Product -->
+
+            <div class="col-md-3">
+
+                <select name="product"
+                        class="form-select"
+                        required>
+
+                    <option selected disabled>
+                        Select Product
+                    </option>
+
+                    {% for p in products %}
+
+                    <option value="{{p[0]}}">
+                        {{p[1]}}
+                    </option>
+
+                    {% endfor %}
+
+                </select>
+
+            </div>
+
+            <!-- Quantity -->
+
+            <div class="col-md-2">
+
+                <input type="number"
+                       name="qty"
+                       class="form-control"
+                       placeholder="Quantity"
+                       required>
+
+            </div>
+
+            <!-- Price -->
+
+            <div class="col-md-2">
+
+                <input type="number"
+                       name="price"
+                       class="form-control"
+                       placeholder="Price"
+                       required>
+
+            </div>
+
+            <!-- Button -->
+
+            <div class="col-md-2">
+
+                <button class="btn btn-custom w-100">
+
+                    Add Purchase
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </form>
+
+</div>
+
+
+<!-- PURCHASE HISTORY -->
+
+<div class="table-container">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <h3>Purchase History</h3>
+
+        <span class="badge-stock">
+
+            Total Records:
+            {{purchases|length}}
+
+        </span>
+
+    </div>
+
+    <table class="table table-hover align-middle">
+
+        <thead class="table-light">
+
+            <tr>
+
+                <th>Supplier</th>
+                <th>Product</th>
+                <th>Quantity</th>
+                <th>Date</th>
+                <th>Actions</th>
+
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+            {% for p in purchases %}
+
+            <tr>
+
+                <td>
+
+                    <strong>{{p[0]}}</strong>
+
+                </td>
+
+                <td>
+
+                    {{p[1]}}
+
+                </td>
+
+                <td>
+
+                    {{p[2]}}
+
+                </td>
+
+                <td>
+
+                    {{p[3]}}
+
+                </td>
+
+                <td>
+
+                    <!-- EDIT BUTTON -->
+
+                    <a href="/edit_purchase/{{p[4]}}"
+                       class="btn btn-info btn-sm">
+
+                        Edit
+
+                    </a>
+
+                    <!-- DELETE BUTTON -->
+
+                    <a href="/delete_purchase/{{p[4]}}"
+   class="btn btn-danger btn-sm"
+   onclick="return confirm('Are you sure you want to delete this purchase record?')">
+
+    Delete
+
+</a>
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+{% endblock %}
