@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1 class="page-title">Sales Invoice</h1>
+
+<div class="table-container">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <h3>Generated Bill</h3>
+        <p class="mb-4">
+
+    <strong>Customer Name:</strong>
+
+    {{customer_name}}
+
+</p>
+
+        <button onclick="window.print()"
+                class="btn btn-success">
+
+            Print Invoice
+
+        </button>
+
+    </div>
+
+    <table class="table table-bordered align-middle">
+
+        <thead class="table-light">
+
+            <tr>
+
+                <th>Product</th>
+                <th>Quantity</th>
+                <th>Price</th>
+                <th>Total</th>
+
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+            {% for item in cart %}
+
+            <tr>
+
+                <td>
+
+                    {{item.name}}
+
+                </td>
+
+                <td>
+
+                    {{item.qty}}
+
+                </td>
+
+                <td>
+
+                    ₹ {{item.price}}
+
+                </td>
+
+                <td>
+
+                    ₹ {{item.total}}
+
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+    <!-- GRAND TOTAL -->
+
+    <div class="text-end mt-4">
+
+        <h3>
+
+            Grand Total:
+            ₹ {{total}}
+
+        </h3>
+
+    </div>
+
+</div>
+
+{% endblock %}

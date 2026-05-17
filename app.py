@@ -315,55 +315,20 @@ def edit_product(id):
 
     return render_template("edit_product.html", product=product)    
 
-'''@app.route("/dashboard")
-def dashboard():
-
-    if "user" not in session:
-        return redirect("/")
-
-    con = get_db()
-    cur = con.cursor()
-
-    cur.execute("SELECT COUNT(*) FROM products")
-    total_products = cur.fetchone()[0]
-
-    cur.execute("SELECT COUNT(*) FROM products WHERE qty < 5")
-    low_stock = cur.fetchone()[0]
-
-    cur.execute("SELECT COUNT(*) FROM suppliers")
-    total_suppliers = cur.fetchone()[0]
-
-    cur.execute("SELECT COUNT(*) FROM customers")
-    total_customers = cur.fetchone()[0]
-
-    cur.execute("SELECT COUNT(*) FROM warehouses")
-    total_warehouses = cur.fetchone()[0]
-
-    con.close()
-
-    return render_template(
-        "dashboard.html",
-        total_products=total_products,
-        low_stock=low_stock,
-        total_suppliers=total_suppliers,
-        total_customers=total_customers,
-        total_warehouses=total_warehouses
-    ) '''
 
 @app.route("/dashboard")
 def dashboard():
 
-    # Check login
+    # Checking login
     if "user" not in session:
         return redirect("/")
 
     con = get_db()
     cur = con.cursor()
 
-    # =========================
+    
     # SALES & PURCHASES
-    # =========================
-
+    
     # Total Sales
     cur.execute("SELECT SUM(total) FROM sales")
     total_sales = cur.fetchone()[0] or 0
@@ -375,9 +340,7 @@ def dashboard():
     # Profit Calculation
     profit = total_sales - total_purchases
 
-    # =========================
-    # PRODUCT STATISTICS
-    # =========================
+    
 
     # Total Products
     cur.execute("SELECT COUNT(*) FROM products")
@@ -387,9 +350,7 @@ def dashboard():
     cur.execute("SELECT COUNT(*) FROM products WHERE qty < 5")
     low_stock = cur.fetchone()[0]
 
-    # =========================
-    # BUSINESS RECORDS
-    # =========================
+    
 
     # Total Customers
     cur.execute("SELECT COUNT(*) FROM customers")
@@ -403,10 +364,9 @@ def dashboard():
     cur.execute("SELECT COUNT(*) FROM warehouses")
     total_warehouses = cur.fetchone()[0]
 
-    # =========================
+    
     # TOP SELLING PRODUCT
-    # =========================
-
+  
     cur.execute("""
         SELECT p.name, SUM(s.qty) as total_qty
         FROM sales s
@@ -418,6 +378,30 @@ def dashboard():
     """)
 
     top_product = cur.fetchone()
+
+
+    # SALES CHART DATA
+
+    cur.execute("""
+        SELECT p.name,
+               SUM(s.total)
+        FROM sales s
+        JOIN products p
+        ON s.product_id = p.id
+        GROUP BY p.name
+    """)
+
+    sales_chart = cur.fetchall()
+
+    labels = []
+    values = []
+
+    for item in sales_chart:
+
+        labels.append(item[0])
+        values.append(item[1])
+
+
 
     con.close()
 
@@ -439,49 +423,90 @@ def dashboard():
         total_warehouses=total_warehouses,
 
         # Analytics
-        top_product=top_product
-    )
+        top_product=top_product,
 
-@app.route("/sales", methods=["GET","POST"])
+        # Chart Data
+        labels=labels,
+        values=values
+    )
+@app.route("/sales", methods=["GET", "POST"])
 def sales():
 
     con = sqlite3.connect("database.db")
     cur = con.cursor()
 
+    error = None
 
     if request.method == "POST":
 
+        customer_id = request.form["customer"]
         product_id = request.form["product"]
         qty = int(request.form["qty"])
 
-        cur.execute("SELECT name, price FROM products WHERE id=?", (product_id,))
+        # PRODUCT DETAILS
+
+        cur.execute(
+            "SELECT name, price, qty FROM products WHERE id=?",
+            (product_id,)
+        )
+
         product = cur.fetchone()
 
         name = product[0]
         price = product[1]
+        available_qty = product[2]
 
-        total = price * qty
+        # STOCK VALIDATION
 
-        item = {
-            "product_id": product_id,
-            "name": name,
-            "price": price,
-            "qty": qty,
-            "total": total
-        }
+        if qty > available_qty:
 
-        cart = session["cart"]
-        cart.append(item)
-        session["cart"] = cart
+            error = f"Only {available_qty} items available in stock."
 
-    cur.execute("SELECT id, name, price FROM products")
+        else:
+
+            total = price * qty
+
+            item = {
+
+                "customer_id": customer_id,
+                "product_id": product_id,
+                "name": name,
+                "price": price,
+                "qty": qty,
+                "total": total
+            }
+
+            cart = session.get("cart", [])
+
+            cart.append(item)
+
+            session["cart"] = cart
+
+    # PRODUCTS
+
+    cur.execute(
+        "SELECT id, name, price FROM products"
+    )
+
     products = cur.fetchall()
 
+    # CUSTOMERS
+
+    cur.execute(
+        "SELECT id, name FROM customers"
+    )
+
+    customers = cur.fetchall()
+
+    con.close()
+
     return render_template(
-    "sales.html",
-    products=products,
-    cart=session.get("cart", [])
-)
+        "sales.html",
+        products=products,
+        customers=customers,
+        cart=session.get("cart", []),
+        error=error
+    )
 
 
 @app.route("/purchases", methods=["GET","POST"])
@@ -657,26 +682,70 @@ def purchase_bill():
 
 @app.route("/generate_bill")
 def generate_bill():
+
     con = sqlite3.connect("database.db")
     cur = con.cursor()
-    cart=session.get("cart",[])
-    grand_total=0
+
+    cart = session.get("cart", [])
+
+    grand_total = 0
+
+    customer_name = ""
 
     for item in cart:
-        product_id=item["product_id"]
-        qty=item["qty"]
-        price=item["price"]
-        total=item["total"]
 
-        grand_total+=total
-        # saving sale in database
-        cur.execute("insert into sales (product_id,qty,price,total,date) values(?,?,?,?,date('now'))", (product_id,qty,price,total))
+        customer_id = item["customer_id"]
+        product_id = item["product_id"]
+        qty = item["qty"]
+        price = item["price"]
+        total = item["total"]
 
-        #To reduce Stock s
-        cur.execute("update products set qty=qty-? where id=?",(qty,product_id))
-        con.commit()
-        session["cart"]=[]
-    return render_template("bill.html",cart=cart,total=grand_total)
+        grand_total += total
+
+        # GET CUSTOMER NAME
+
+        cur.execute(
+            "SELECT name FROM customers WHERE id=?",
+            (customer_id,)
+        )
+
+        customer = cur.fetchone()
+
+        if customer:
+            customer_name = customer[0]
+
+        # SAVE SALES
+
+        cur.execute(
+            """
+            INSERT INTO sales
+            (customer_id, product_id, qty, price, total, date)
+
+            VALUES (?, ?, ?, ?, ?, date('now'))
+            """,
+            (customer_id, product_id, qty, price, total)
+        )
+
+        # UPDATE STOCK
+
+        cur.execute(
+            "UPDATE products SET qty = qty - ? WHERE id=?",
+            (qty, product_id)
+        )
+
+    con.commit()
+
+    session["cart"] = []
+
+    con.close()
+
+    return render_template(
+        "bill.html",
+        cart=cart,
+        total=grand_total,
+        customer_name=customer_name
+    )
+
 
 @app.route("/register",methods=["GET","POST"])
 def register():
